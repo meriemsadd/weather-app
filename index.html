@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+    <button id="toggle-theme" title="Toggle light/dark mode">🌓</button>
+    <div class="search">
+      <input type="text" placeholder="Enter city name" spellcheck="false" />
+      <button><img src="images/search.png" alt="search" /></button>
+    </div>
+    <div class="weather">
+      <img src="images/rain.png" class="weather-icon" alt="weather icon" />
+      <h1 class="temp">--°C</h1>
+      <h2 class="city">--</h2>
+      <p class="description">--</p>
+      <p class="date">--</p>
+      <div class="details">
+        <div class="col">
+          <img src="images/humidity.png" alt="Humidity icon" />
+          <div>
+            <p class="humidity">--%</p>
+            <p>Humidity</p>
+          </div>
+        </div>
+        <div class="col">
+          <img src="images/wind.png" alt="Wind icon" />
+          <div>
+            <p class="wind">-- km/h</p>
+            <p>Wind speed</p>
+          </div>
+        </div>
+      </div>
+      <p class="error-message"></p>
+    </div>
+  </div>
+
+  <script>
+    const apiKey = "38aecef79849e233a002c1d479b6452f";
+
+    const card = document.querySelector(".card");
+    const tempEl = document.querySelector(".temp");
+    const cityEl = document.querySelector(".city");
+    const humidityEl = document.querySelector(".humidity");
+    const windEl = document.querySelector(".wind");
+    const weatherIcon = document.querySelector(".weather-icon");
+    const descriptionEl = document.querySelector(".description");
+    const dateEl = document.querySelector(".date");
+    const errorMsg = document.querySelector(".error-message");
+    const input = document.querySelector(".search input");
+    const searchBtn = document.querySelector(".search button");
+    const toggleThemeBtn = document.getElementById("toggle-theme");
+
+    function updateDateTime(timestamp, timezone) {
+      // timestamp in seconds, timezone in seconds offset from UTC
+      const localTime = new Date((timestamp + timezone) * 1000);
+      return localTime.toUTCString().replace("GMT", "");
+    }
+
+    async function checkWeather(city) {
+      errorMsg.textContent = ""; // reset error message
+      try {
+        const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error("City not found");
+        }
+        const data = await response.json();
+
+        // Mise à jour des éléments
+        tempEl.innerText = Math.round(data.main.temp) + "°C";
+        cityEl.innerText = data.name + ", " + data.sys.country;
+        humidityEl.innerText = data.main.humidity + "%";
+        windEl.innerText = data.wind.speed + " km/h";
+        descriptionEl.innerText = data.weather[0].description;
+        dateEl.innerText = updateDateTime(data.dt, data.timezone);
+
+        // Animation simple
+        card.classList.remove("fade-in");
+        void card.offsetWidth; // trigger reflow
+        card.classList.add("fade-in");
+
+        // Icon météo dynamique
+        const iconCode = data.weather[0].icon;
+        weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+      } catch (error) {
+        errorMsg.textContent = error.message;
+        tempEl.innerText = "--°C";
+        cityEl.innerText = "--";
+        humidityEl.innerText = "--%";
+        windEl.innerText = "-- km/h";
+        descriptionEl.innerText = "--";
+        dateEl.innerText = "--";
+        weatherIcon.src = "images/rain.png"; // icône par défaut
+      }
+    }
+
+    searchBtn.addEventListener("click", () => {
+      const city = input.value.trim();
+      if (city) checkWeather(city);
+    });
+
+    input.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        const city = e.target.value.trim();
+        if (city) checkWeather(city);
+      }
+    });
+
+    // Mode clair/sombre
+    toggleThemeBtn.addEventListener("click", () => {
+      document.body.classList.toggle("light-theme");
+      // Change emoji selon thème
+      if (document.body.classList.contains("light-theme")) {
+        toggleThemeBtn.textContent = "🌙";
+      } else {
+        toggleThemeBtn.textContent = "🌓";
+      }
+    });
+
+    // Chargement initial (ex: Oujda)
+    checkWeather("Oujda");
+  </script>
+</body>
+</html>
